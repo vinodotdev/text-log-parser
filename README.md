@@ -1,5 +1,5 @@
 # text-log-parser
-This is a simple text log parser that works for any delimited log file.
+This is a simple text log parser that works for any delimited log string and will convert it into a HashMap.
 The default delimiter is space ` ` but can be configured by changing the LogFormat delimiter attribute when you create your format.
 
 Check out the test: https://github.com/vinodotdev/text-log-parser/blob/main/tests/test_parse.rs
