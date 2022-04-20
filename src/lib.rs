@@ -4,7 +4,8 @@ use regex::Regex;
 
 #[derive(Debug, PartialEq)] //allows {:?} to print the entire struct
 pub struct LogFormat {
-    fields: Vec<LogField>
+    fields: Vec<LogField>,
+    seperator: String
 }
 
 #[derive(Debug, PartialEq)]
@@ -16,9 +17,9 @@ pub struct LogField {
 }
 
 impl LogFormat {
-    pub fn new(format: &str) -> Self {
+    pub fn new(format: &str, seperator: &str) -> Self {
         let mut log_fields = Vec::new();
-        let format_fields: Vec<&str> = format.split(" ").collect();
+        let format_fields: Vec<&str> = format.split(seperator).collect();
 
         let mut i: u32 = 0;
         for field in format_fields {
@@ -53,14 +54,15 @@ impl LogFormat {
         }
 
         LogFormat{
-            fields: log_fields
+            fields: log_fields,
+            seperator: seperator.to_string()
         }
     }
 }
 
-fn until_space(input: &str) -> IResult<&str, &str> {
+fn until_seperator<'a>(input: &'a str, seperator: &str) -> IResult<&'a str, &'a str> {
     alt(
-        (take_until(" "),take_until("\n"))
+        (take_until(seperator),take_until("\n"))
     )(input)
 }
 
@@ -74,6 +76,7 @@ fn get_delimited<'a>(input: &'a str, preceded_by: &str, terminated_by: &str) -> 
 
 pub fn parse(log_format: LogFormat, log_string: &str) -> HashMap<String, String> {
     let mut remainder = log_string;
+    let seperator = log_format.seperator.as_str();
     let mut log_message = HashMap::new();
     let fields_len = log_format.fields.len();
     for log_field in log_format.fields {
@@ -86,19 +89,22 @@ pub fn parse(log_format: LogFormat, log_string: &str) -> HashMap<String, String>
 
         //if it not first and no other predessor, use space as predessor
         if ordinal.to_usize() != 0 && preceded_by == "" {
-            preceded_by = " ";
+            preceded_by = seperator;
         }
         //if it not last and no other terminator, use space as terminator
         if ordinal.to_usize() != fields_len - 1 && terminated_by == "" {
-            terminated_by = " "
+            terminated_by = seperator;
         }
 
         (remainder, _) = until_delimiter(remainder, preceded_by).unwrap();
         (remainder, field_value) = get_delimited(remainder, preceded_by, terminated_by).unwrap();
         //if not last field, get to next space
         if ordinal.to_usize() != fields_len - 1 {
-            (remainder, _) = until_space(remainder).unwrap();
+            (remainder, _) = until_seperator(remainder, log_format.seperator.as_str()).unwrap();
         }
+
+        println!("value: {}",field_value);
+         println!("remainder: {}",remainder);
 
         log_message.insert(name.to_string(), field_value.to_string());
     }
@@ -113,7 +119,7 @@ mod tests {
     #[test]
     fn test_new_log_format() {
         let log_format = r#"$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent""#;
-        let format = LogFormat::new(log_format);
+        let format = LogFormat::new(log_format, " ");
         assert_eq!(format.fields.len(),9);
         assert_eq!(format.fields[1].name,"field1");
         assert_eq!(format.fields[7].name,"http_referer");
@@ -123,9 +129,9 @@ mod tests {
 
     #[test]
     fn test_until_space() {
-        assert_eq!(until_space("135.125.244.48 -"),Ok((" -","135.125.244.48")));
-        assert_eq!(until_space("135.125.244.48\n"),Ok(("\n","135.125.244.48")));
-        assert_eq!(until_space(" 135.125.244.48 -"),Ok((" 135.125.244.48 -","")));
+        assert_eq!(until_seperator("135.125.244.48 -", " "),Ok((" -","135.125.244.48")));
+        assert_eq!(until_seperator("135.125.244.48\n", " "),Ok(("\n","135.125.244.48")));
+        assert_eq!(until_seperator(" 135.125.244.48 -", " "),Ok((" 135.125.244.48 -","")));
     }
 
     #[test]
@@ -163,7 +169,7 @@ mod tests {
     #[test]
     fn test_parse() {
         let format = r#"$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent""#;
-        let log_format = LogFormat::new(format);
+        let log_format = LogFormat::new(format, " ");
         let log_string = r#"185.254.196.115 - - [15/Apr/2022:14:27:16 +0000] "GET /.env HTTP/1.1" 404 1371 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.129 Safari/537.36""#;
         let log_message = parse(log_format, log_string);
         assert_eq!(log_message.len(),9);
