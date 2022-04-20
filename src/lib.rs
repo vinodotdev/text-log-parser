@@ -1,15 +1,14 @@
 use std::{collections::HashMap};
 use nom::{bytes::complete::*, IResult, sequence::*, branch::alt, ToUsize};
 use regex::Regex;
-use tracing::field;
 
 #[derive(Debug, PartialEq)] //allows {:?} to print the entire struct
-struct LogFormat {
+pub struct LogFormat {
     fields: Vec<LogField>
 }
 
 #[derive(Debug, PartialEq)]
-struct LogField {
+pub struct LogField {
     ordinal: u32,
     name: String,
     preceded_by: String,
@@ -17,16 +16,15 @@ struct LogField {
 }
 
 impl LogFormat {
-    fn new(format: &str) -> Self {
+    pub fn new(format: &str) -> Self {
         let mut log_fields = Vec::new();
         let format_fields: Vec<&str> = format.split(" ").collect();
 
         let mut i: u32 = 0;
-        let fields_len: u32 = format_fields.len().try_into().unwrap();
         for field in format_fields {
             let mut preceded_by: String = "".to_string();
             let mut terminated_by: String = "".to_string();
-            let mut name: String = "".to_string();
+            let name: String;
             
             //if the field is `missing` then give it generic name
             if field.contains("$") {
@@ -54,11 +52,6 @@ impl LogFormat {
             i+=1;
         }
 
-        // if nothing comes up, return an empty LogFormat
-        // if log_fields.len() == 0 {
-        //     log_fields.push(LogField {ordinal: 0, name: "".to_string(), preceded_by: "".to_string(), terminated_by: "".to_string()});
-        // }
-
         LogFormat{
             fields: log_fields
         }
@@ -71,11 +64,6 @@ fn until_space(input: &str) -> IResult<&str, &str> {
     )(input)
 }
 
-fn until_end(input: &str) -> IResult<&str, &str> {
-    let len = input.len();
-    Ok(("",&input[0..len]))
-}
-
 fn until_delimiter<'a>(input: &'a str, delimiter: &str) -> IResult<&'a str, &'a str> {
     take_until(delimiter)(input)
 }
@@ -84,7 +72,7 @@ fn get_delimited<'a>(input: &'a str, preceded_by: &str, terminated_by: &str) -> 
     preceded(tag(preceded_by),take_until(terminated_by))(input)
 }
 
-fn parse(log_format: LogFormat, log_string: &str) -> HashMap<String, String> {
+pub fn parse(log_format: LogFormat, log_string: &str) -> HashMap<String, String> {
     let mut remainder = log_string;
     let mut log_message = HashMap::new();
     let fields_len = log_format.fields.len();
@@ -94,7 +82,7 @@ fn parse(log_format: LogFormat, log_string: &str) -> HashMap<String, String> {
         let ordinal = log_field.ordinal;
         let name = log_field.name.as_str();
 
-        let mut field_value = "";
+        let field_value: &str;
 
         //if it not first and no other predessor, use space as predessor
         if ordinal.to_usize() != 0 && preceded_by == "" {
@@ -141,12 +129,6 @@ mod tests {
         assert_eq!(until_space("135.125.244.48 -"),Ok((" -","135.125.244.48")));
         assert_eq!(until_space("135.125.244.48\n"),Ok(("\n","135.125.244.48")));
         assert_eq!(until_space(" 135.125.244.48 -"),Ok((" 135.125.244.48 -","")));
-    }
-
-    #[test]
-    fn test_until_end() {
-        assert_eq!(until_end("135.125.244.48 -"),Ok(("","135.125.244.48 -")));
-        //let (remaining, matched) = until_end("135.125.244.48 -").unwrap();
     }
 
     #[test]
