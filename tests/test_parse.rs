@@ -1,4 +1,4 @@
-use log_parser::{LogFormat, parse};
+use text_log_parser::{LogFormat, parse};
 
 #[test]
 fn test_parse() {
