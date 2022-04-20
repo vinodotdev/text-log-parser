@@ -1,5 +1,5 @@
 [package]
-name = "log-parser"
+name = "text-log-parser"
 authors = ["Fawad Shaikh <fawad@vino.dev>"]
 version = "0.2.0"
 edition = "2021"
