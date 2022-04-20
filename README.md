@@ -4,4 +4,4 @@ The default delimiter is space ` ` but can be configured by changing the LogForm
 
 Check out the test: https://github.com/vinodotdev/text-log-parser/blob/main/tests/test_parse.rs
 
-To name the fields in the log, you should use `$variable_name` syntax.  Again, see the example.  The parser will use the format provided to create a structure of seperators and automatically attempt to determine the delimiters.
+To name the fields in the log, you should use `$variable_name` syntax.  Again, see the test.  The parser will use the format provided to create a structure of seperators and automatically attempt to determine the delimiters.
