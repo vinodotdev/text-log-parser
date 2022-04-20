@@ -1,7 +1,7 @@
 use std::{collections::HashMap};
 use nom::{bytes::complete::*, IResult, sequence::*, branch::alt, ToUsize};
 use regex::Regex;
-use tracing::field;rm -
+use tracing::field;
 
 #[derive(Debug, PartialEq)] //allows {:?} to print the entire struct
 struct LogFormat {
