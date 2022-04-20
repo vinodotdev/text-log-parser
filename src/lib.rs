@@ -100,9 +100,6 @@ pub fn parse(log_format: LogFormat, log_string: &str) -> HashMap<String, String>
             (remainder, _) = until_space(remainder).unwrap();
         }
 
-        println!("value: {}",field_value);
-        println!("remainder: {}",remainder);
-
         log_message.insert(name.to_string(), field_value.to_string());
     }
     log_message
